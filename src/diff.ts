@@ -16,29 +16,29 @@ function diff(thing1, thing2) {
 }
 
 export async function diffCmd(first: string, second: string): Promise<void> {
-	const firstMeta = await parseTorrentFromFilename(first);
-	const secondMeta = await parseTorrentFromFilename(second);
-	const firstRes = createSearcheeFromMetafile(firstMeta);
+	let firstMeta = await parseTorrentFromFilename(first);
+	let secondMeta = await parseTorrentFromFilename(second);
+	let firstRes = createSearcheeFromMetafile(firstMeta);
 	if (firstRes.isErr()) {
 		console.log(firstRes.unwrapErr());
 		return;
 	}
-	const secondRes = createSearcheeFromMetafile(secondMeta);
+	let secondRes = createSearcheeFromMetafile(secondMeta);
 	if (secondRes.isErr()) {
 		console.log(secondRes.unwrapErr());
 		return;
 	}
-	const s1 = firstRes.unwrap();
-	const s2 = secondRes.unwrap();
-	const sortBy =
+	let s1 = firstRes.unwrap();
+	let s2 = secondRes.unwrap();
+	let sortBy =
 		s1.files.length === 1
 			? (a, b) => b.length - a.length
 			: s2.files.length === 1
 				? (a, b) => a.length - b.length
 				: (a, b) => a.path.localeCompare(b.path);
 
-	const stripForDiff = (searchee: Searchee) => {
-		for (const key of Object.keys(searchee)) {
+	let stripForDiff = (searchee: Searchee) => {
+		for (let key of Object.keys(searchee)) {
 			if (key !== "files") delete searchee[key];
 		}
 		searchee.files.sort(sortBy);

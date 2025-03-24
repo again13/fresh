@@ -43,7 +43,7 @@ import {
 	TorrentMetadataInClient,
 } from "./TorrentClient.js";
 
-const COULD_NOT_FIND_INFO_HASH = "Could not find info-hash.";
+var COULD_NOT_FIND_INFO_HASH = "Could not find info-hash.";
 
 interface LibTorrentResumeFileEntry {
 	completed: number;
@@ -75,12 +75,12 @@ async function createLibTorrentResumeTree(
 	async function getFileResumeData(
 		file: File,
 	): Promise<LibTorrentResumeFileEntry | null> {
-		const filePathWithoutFirstSegment = file.path
+		var filePathWithoutFirstSegment = file.path
 			.split(sep)
 			.slice(1)
 			.join(sep);
-		const resolvedFilePath = resolve(basePath, filePathWithoutFirstSegment);
-		const fileStat = await stat(resolvedFilePath).catch(
+		var resolvedFilePath = resolve(basePath, filePathWithoutFirstSegment);
+		var fileStat = await stat(resolvedFilePath).catch(
 			() => ({ isFile: () => false }) as Stats,
 		);
 		if (!fileStat.isFile() || fileStat.size !== file.length) {
@@ -94,7 +94,7 @@ async function createLibTorrentResumeTree(
 		};
 	}
 
-	const fileResumes = await Promise.all(meta.files.map(getFileResumeData));
+	var fileResumes = await Promise.all(meta.files.map(getFileResumeData));
 	return {
 		bitfield: Math.ceil(meta.length / meta.pieceLength),
 		files: fileResumes.filter(isTruthy),
@@ -113,7 +113,7 @@ export default class RTorrent implements TorrentClient {
 		this.clientHost = new URL(url).host;
 		this.clientPriority = priority;
 		this.label = `${this.clientType}@${this.clientHost}`;
-		const { href, username, password } = extractCredentialsFromUrl(
+		var { href, username, password } = extractCredentialsFromUrl(
 			url,
 		).unwrapOrThrow(
 			new CrossSeedError(
@@ -121,12 +121,12 @@ export default class RTorrent implements TorrentClient {
 			),
 		);
 
-		const clientCreator =
+		var clientCreator =
 			new URL(href).protocol === "https:"
 				? xmlrpc.createSecureClient
 				: xmlrpc.createClient;
 
-		const shouldUseAuth = Boolean(username && password);
+		var shouldUseAuth = Boolean(username && password);
 
 		this.client = clientCreator({
 			url: href,
@@ -137,8 +137,8 @@ export default class RTorrent implements TorrentClient {
 	}
 
 	private async methodCallP<R>(method: string, args): Promise<R> {
-		const msg = `Calling method ${method} with params ${inspect(args, { depth: null, compact: true })}`;
-		const message = msg.length > 1000 ? `${msg.slice(0, 1000)}...` : msg;
+		var msg = `Calling method ${method} with params ${inspect(args, { depth: null, compact: true })}`;
+		var message = msg.length > 1000 ? `${msg.slice(0, 1000)}...` : msg;
 		logger.verbose({ label: this.label, message });
 		return new Promise((resolve, reject) => {
 			this.client.methodCall(method, args, (err, data) => {
@@ -149,7 +149,7 @@ export default class RTorrent implements TorrentClient {
 	}
 
 	async checkForInfoHashInClient(infoHash: string): Promise<boolean> {
-		const downloadList = await this.methodCallP<string[]>(
+		var downloadList = await this.methodCallP<string[]>(
 			"download_list",
 			[],
 		);
@@ -172,7 +172,7 @@ export default class RTorrent implements TorrentClient {
 			"FAILURE" | "TORRENT_NOT_COMPLETE" | "NOT_FOUND"
 		>
 	> {
-		const hash = infoHash.toUpperCase();
+		var hash = infoHash.toUpperCase();
 		type ReturnType =
 			| [
 					[string],
@@ -186,7 +186,7 @@ export default class RTorrent implements TorrentClient {
 			| Fault[];
 
 		let response: ReturnType;
-		const args = [
+		var args = [
 			[
 				{
 					methodName: "d.name",
@@ -242,7 +242,7 @@ export default class RTorrent implements TorrentClient {
 					);
 				}
 			}
-			const [
+			var [
 				[name],
 				[directoryBase],
 				[bytesLeftStr],
@@ -251,7 +251,7 @@ export default class RTorrent implements TorrentClient {
 				[isMultiFileStr],
 				[isActiveStr],
 			] = response;
-			const isComplete = Boolean(Number(isCompleteStr));
+			var isComplete = Boolean(Number(isCompleteStr));
 			if (onlyCompleted && !isComplete) {
 				return resultOfErr("TORRENT_NOT_COMPLETE");
 			}
@@ -283,11 +283,11 @@ export default class RTorrent implements TorrentClient {
 	> {
 		if (path) {
 			// resolve to absolute because we send the path to rTorrent
-			const basePath = resolve(path, meta.name);
-			const directoryBase = meta.isSingleFileTorrent ? path : basePath;
+			var basePath = resolve(path, meta.name);
+			var directoryBase = meta.isSingleFileTorrent ? path : basePath;
 			return resultOf({ downloadDir: path, basePath, directoryBase });
 		} else {
-			const result = await this.checkOriginalTorrent(
+			var result = await this.checkOriginalTorrent(
 				searchee.infoHash!,
 				true,
 			);
@@ -304,7 +304,7 @@ export default class RTorrent implements TorrentClient {
 	}
 
 	async validateConfig(): Promise<void> {
-		const { torrentDir } = getRuntimeConfig();
+		var { torrentDir } = getRuntimeConfig();
 		try {
 			await this.methodCallP<string[]>("download_list", []);
 		} catch (e) {
@@ -335,7 +335,7 @@ export default class RTorrent implements TorrentClient {
 		if (!(await this.checkForInfoHashInClient(meta.infoHash))) {
 			return resultOfErr("NOT_FOUND");
 		}
-		const result = await this.checkOriginalTorrent(
+		var result = await this.checkOriginalTorrent(
 			meta.infoHash,
 			options.onlyCompleted,
 		);
@@ -349,19 +349,19 @@ export default class RTorrent implements TorrentClient {
 	async getAllDownloadDirs(options: {
 		onlyCompleted: boolean;
 	}): Promise<Map<string, string>> {
-		const hashes = await this.methodCallP<string[]>("download_list", []);
+		var hashes = await this.methodCallP<string[]>("download_list", []);
 		type ReturnType = string[][] | Fault[];
 		function isFault(response: ReturnType): response is Fault[] {
 			return "faultString" in response[0];
 		}
 		let numMethods = 0;
-		const results = await fromBatches(
+		var results = await fromBatches(
 			hashes,
 			async (batch) => {
-				const args = [
+				var args = [
 					batch
 						.map((hash) => {
-							const arg = [
+							var arg = [
 								{
 									methodName: "d.directory",
 									params: [hash],
@@ -381,7 +381,7 @@ export default class RTorrent implements TorrentClient {
 						.flat(),
 				];
 				try {
-					const res = await this.methodCallP<ReturnType>(
+					var res = await this.methodCallP<ReturnType>(
 						"system.multicall",
 						args,
 					);
@@ -415,11 +415,11 @@ export default class RTorrent implements TorrentClient {
 		}
 		try {
 			return hashes.reduce((infoHashSavePathMap, hash, index) => {
-				const directory = results[index * numMethods][0];
-				const isMultiFile = Boolean(
+				var directory = results[index * numMethods][0];
+				var isMultiFile = Boolean(
 					Number(results[index * numMethods + 1][0]),
 				);
-				const isComplete = Boolean(
+				var isComplete = Boolean(
 					Number(results[index * numMethods + 2][0]),
 				);
 				if (!options.onlyCompleted || isComplete) {
@@ -444,7 +444,7 @@ export default class RTorrent implements TorrentClient {
 		infoHash: string,
 	): Promise<Result<boolean, "NOT_FOUND">> {
 		try {
-			const response = await this.methodCallP<string[]>("d.complete", [
+			var response = await this.methodCallP<string[]>("d.complete", [
 				infoHash,
 			]);
 			if (response.length === 0) {
@@ -460,7 +460,7 @@ export default class RTorrent implements TorrentClient {
 		infoHash: string,
 	): Promise<Result<boolean, "NOT_FOUND">> {
 		try {
-			const response = await this.methodCallP<string[]>("d.hashing", [
+			var response = await this.methodCallP<string[]>("d.hashing", [
 				infoHash,
 			]);
 			if (response.length === 0) {
@@ -473,15 +473,15 @@ export default class RTorrent implements TorrentClient {
 	}
 
 	async getAllTorrents(): Promise<TorrentMetadataInClient[]> {
-		const hashes = await this.methodCallP<string[]>("download_list", []);
+		var hashes = await this.methodCallP<string[]>("download_list", []);
 		type ReturnType = string[][] | Fault[];
 		function isFault(response: ReturnType): response is Fault[] {
 			return "faultString" in response[0];
 		}
-		const results = await fromBatches(
+		var results = await fromBatches(
 			hashes,
 			async (batch) => {
-				const args = [
+				var args = [
 					batch.map((hash) => {
 						return {
 							methodName: "d.custom1",
@@ -490,7 +490,7 @@ export default class RTorrent implements TorrentClient {
 					}),
 				];
 				try {
-					const res = await this.methodCallP<ReturnType>(
+					var res = await this.methodCallP<ReturnType>(
 						"system.multicall",
 						args,
 					);
@@ -550,21 +550,21 @@ export default class RTorrent implements TorrentClient {
 		newSearcheesOnly?: boolean;
 		refresh?: string[];
 	}): Promise<ClientSearcheeResult> {
-		const searchees: SearcheeClient[] = [];
-		const newSearchees: SearcheeClient[] = [];
-		const hashes = await this.methodCallP<string[]>("download_list", []);
+		var searchees: SearcheeClient[] = [];
+		var newSearchees: SearcheeClient[] = [];
+		var hashes = await this.methodCallP<string[]>("download_list", []);
 		type ReturnType = any[][] | Fault[]; // eslint-disable-line @typescript-eslint/no-explicit-any
 		function isFault(response: ReturnType): response is Fault[] {
 			return "faultString" in response[0];
 		}
 		let numMethods = 0;
-		const results = await fromBatches(
+		var results = await fromBatches(
 			hashes,
 			async (batch) => {
-				const args = [
+				var args = [
 					batch
 						.map((hash) => {
-							const arg = [
+							var arg = [
 								{
 									methodName: "d.name",
 									params: [hash],
@@ -605,7 +605,7 @@ export default class RTorrent implements TorrentClient {
 						.flat(),
 				];
 				try {
-					const res = await this.methodCallP<ReturnType>(
+					var res = await this.methodCallP<ReturnType>(
 						"system.multicall",
 						args,
 					);
@@ -636,15 +636,15 @@ export default class RTorrent implements TorrentClient {
 			});
 			return { searchees, newSearchees };
 		}
-		const infoHashes = new Set<string>();
+		var infoHashes = new Set<string>();
 		for (let i = 0; i < hashes.length; i++) {
-			const infoHash = hashes[i].toLowerCase();
+			var infoHash = hashes[i].toLowerCase();
 			infoHashes.add(infoHash);
-			const dbTorrent = await memDB("torrent")
+			var dbTorrent = await memDB("torrent")
 				.where("info_hash", infoHash)
 				.where("client_host", this.clientHost)
 				.first();
-			const refresh =
+			var refresh =
 				options?.refresh === undefined
 					? false
 					: options.refresh.length === 0
@@ -656,12 +656,12 @@ export default class RTorrent implements TorrentClient {
 				}
 				continue;
 			}
-			const name: string = results[i * numMethods][0];
-			const length = Number(results[i * numMethods + 1][0]);
-			const directory: string = results[i * numMethods + 2][0];
-			const isMultiFile = Boolean(Number(results[i * numMethods + 3][0]));
-			const labels: string = results[i * numMethods + 4][0];
-			const files: File[] = results[i * numMethods + 5][0].map((arr) => ({
+			var name: string = results[i * numMethods][0];
+			var length = Number(results[i * numMethods + 1][0]);
+			var directory: string = results[i * numMethods + 2][0];
+			var isMultiFile = Boolean(Number(results[i * numMethods + 3][0]));
+			var labels: string = results[i * numMethods + 4][0];
+			var files: File[] = results[i * numMethods + 5][0].map((arr) => ({
 				name: basename(arr[0]),
 				path: isMultiFile ? join(basename(directory), arr[0]) : arr[0],
 				length: Number(arr[1]),
@@ -673,21 +673,21 @@ export default class RTorrent implements TorrentClient {
 				});
 				continue;
 			}
-			const trackers = organizeTrackers(
+			var trackers = organizeTrackers(
 				results[i * numMethods + 6][0].map((arr) => ({
 					url: arr[0],
 					tier: Number(arr[1]),
 				})),
 			);
-			const title = parseTitle(name, files) ?? name;
-			const savePath = isMultiFile ? dirname(directory) : directory;
-			const category = "";
-			const tags = labels.length
+			var title = parseTitle(name, files) ?? name;
+			var savePath = isMultiFile ? dirname(directory) : directory;
+			var category = "";
+			var tags = labels.length
 				? decodeURIComponent(labels)
 						.split(",")
 						.map((tag) => tag.trim())
 				: [];
-			const searchee: SearcheeClient = {
+			var searchee: SearcheeClient = {
 				infoHash,
 				name,
 				title,
@@ -718,8 +718,8 @@ export default class RTorrent implements TorrentClient {
 		options: { checkOnce: boolean },
 	): Promise<void> {
 		let sleepTime = resumeSleepTime;
-		const maxRemainingBytes = getMaxRemainingBytes(decision);
-		const stopTime = getResumeStopTime();
+		var maxRemainingBytes = getMaxRemainingBytes(decision);
+		var stopTime = getResumeStopTime();
 		let stop = false;
 		while (Date.now() < stopTime) {
 			if (options.checkOnce) {
@@ -727,7 +727,7 @@ export default class RTorrent implements TorrentClient {
 				stop = true;
 			}
 			await wait(sleepTime);
-			const torrentInfoRes = await this.checkOriginalTorrent(
+			var torrentInfoRes = await this.checkOriginalTorrent(
 				infoHash,
 				false,
 			);
@@ -735,11 +735,11 @@ export default class RTorrent implements TorrentClient {
 				sleepTime = resumeErrSleepTime; // Dropping connections or restart
 				continue;
 			}
-			const torrentInfo = torrentInfoRes.unwrap();
+			var torrentInfo = torrentInfoRes.unwrap();
 			if (torrentInfo.hashing) {
 				continue;
 			}
-			const torrentLog = `${torrentInfo.name} [${sanitizeInfoHash(infoHash)}]`;
+			var torrentLog = `${torrentInfo.name} [${sanitizeInfoHash(infoHash)}]`;
 			if (torrentInfo.isActive) {
 				logger.warn({
 					label: this.label,
@@ -776,7 +776,7 @@ export default class RTorrent implements TorrentClient {
 			return InjectionResult.ALREADY_EXISTS;
 		}
 
-		const result = await this.getDownloadLocation(meta, searchee, path);
+		var result = await this.getDownloadLocation(meta, searchee, path);
 		if (result.isErr()) {
 			switch (result.unwrapErr()) {
 				case "NOT_FOUND":
@@ -787,17 +787,17 @@ export default class RTorrent implements TorrentClient {
 					return InjectionResult.FAILURE;
 			}
 		}
-		const { directoryBase, basePath } = result.unwrap();
+		var { directoryBase, basePath } = result.unwrap();
 
-		const rawWithLibtorrentResume = {
+		var rawWithLibtorrentResume = {
 			...meta.raw,
 			libtorrent_resume: await createLibTorrentResumeTree(meta, basePath),
 		};
 
-		const toRecheck = shouldRecheck(searchee, decision);
-		const loadType = toRecheck ? "load.raw" : "load.raw_start";
+		var toRecheck = shouldRecheck(searchee, decision);
+		var loadType = toRecheck ? "load.raw" : "load.raw_start";
 
-		const retries = 5;
+		var retries = 5;
 		for (let i = 0; i < retries; i++) {
 			try {
 				await this.methodCallP<void>(

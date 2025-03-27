@@ -45,7 +45,7 @@ import {
 	wait,
 } from "../utils.js";
 
-var X_WWW_FORM_URLENCODED = {
+const X_WWW_FORM_URLENCODED = {
 	"Content-Type": "application/x-www-form-urlencoded",
 };
 
@@ -137,7 +137,7 @@ export default class QBittorrent implements TorrentClient {
 
 	async login(): Promise<void> {
 		let response: Response;
-		var { href, username, password } = this.url;
+		const { href, username, password } = this.url;
 		try {
 			response = await fetch(`${href}/auth/login`, {
 				method: "POST",
@@ -160,7 +160,7 @@ export default class QBittorrent implements TorrentClient {
 				`qBittorrent login failed: Invalid username or password`,
 			);
 		}
-		var version = await this.request(
+		const version = await this.request(
 			"/app/version",
 			"",
 			X_WWW_FORM_URLENCODED,
@@ -192,7 +192,7 @@ export default class QBittorrent implements TorrentClient {
 	}
 
 	async validateConfig(): Promise<void> {
-		var { torrentDir } = getRuntimeConfig();
+		const { torrentDir } = getRuntimeConfig();
 		try {
 			await this.login();
 		} catch (e) {
@@ -202,7 +202,7 @@ export default class QBittorrent implements TorrentClient {
 		await this.createTag();
 
 		if (!torrentDir) return;
-		var { resume_data_storage_type } = await this.getPreferences();
+		const { resume_data_storage_type } = await this.getPreferences();
 		if (resume_data_storage_type === "SQLite") {
 			throw new CrossSeedError(
 				`[${this.label}] torrentDir is not compatible with SQLite mode in qBittorrent, use https://www.cross-seed.org/docs/basics/options#useclienttorrents`,
@@ -221,7 +221,7 @@ export default class QBittorrent implements TorrentClient {
 		headers: Record<string, string> = {},
 		retries = 3,
 	): Promise<string | undefined> {
-		var bodyStr =
+		const bodyStr =
 			body instanceof FormData
 				? JSON.stringify(Object.fromEntries(body))
 				: JSON.stringify(body).replace(
@@ -267,7 +267,7 @@ export default class QBittorrent implements TorrentClient {
 	}
 
 	async getPreferences(): Promise<Preferences> {
-		var responseText = await this.request(
+		const responseText = await this.request(
 			"/app/preferences",
 			"",
 			X_WWW_FORM_URLENCODED,
@@ -305,7 +305,7 @@ export default class QBittorrent implements TorrentClient {
 		savePath: string,
 		autoTMM: boolean,
 	): Promise<string> {
-		var { duplicateCategories, linkCategory } = getRuntimeConfig();
+		const { duplicateCategories, linkCategory } = getRuntimeConfig();
 
 		if (!duplicateCategories) {
 			return category;
@@ -314,14 +314,14 @@ export default class QBittorrent implements TorrentClient {
 			return category; // Use tags for category duplication if linking
 		}
 
-		var dupeCategory = category.endsWith(TORRENT_CATEGORY_SUFFIX)
+		const dupeCategory = category.endsWith(TORRENT_CATEGORY_SUFFIX)
 			? category
 			: `${category}${TORRENT_CATEGORY_SUFFIX}`;
 		if (!autoTMM) return dupeCategory;
 
 		// savePath is guaranteed to be the base category's save path due to autoTMM
-		var categories = await this.getAllCategories();
-		var newRes = categories.find((c) => c.name === dupeCategory);
+		const categories = await this.getAllCategories();
+		const newRes = categories.find((c) => c.name === dupeCategory);
 		if (!newRes) {
 			await this.createCategory(dupeCategory, savePath);
 		} else if (newRes.savePath !== savePath) {
@@ -334,12 +334,12 @@ export default class QBittorrent implements TorrentClient {
 		searcheeInfo: TorrentInfo | undefined,
 		path: string | undefined,
 	): string {
-		var { duplicateCategories, linkCategory } = getRuntimeConfig();
+		const { duplicateCategories, linkCategory } = getRuntimeConfig();
 
 		if (!duplicateCategories || !searcheeInfo || !path) {
 			return TORRENT_TAG; // Require path to duplicate category using tags
 		}
-		var searcheeCategory = searcheeInfo.category;
+		const searcheeCategory = searcheeInfo.category;
 		if (!searcheeCategory.length || searcheeCategory === linkCategory) {
 			return TORRENT_TAG;
 		}
@@ -375,12 +375,12 @@ export default class QBittorrent implements TorrentClient {
 	}
 
 	async getAllCategories(): Promise<CategoryInfo[]> {
-		var responseText = await this.request("/torrents/categories", "");
+		const responseText = await this.request("/torrents/categories", "");
 		return responseText ? Object.values(JSON.parse(responseText)) : [];
 	}
 
 	async getFiles(infoHash: string): Promise<File[] | null> {
-		var responseText = await this.request(
+		const responseText = await this.request(
 			"/torrents/files",
 			`hash=${infoHash}`,
 			X_WWW_FORM_URLENCODED,
@@ -399,7 +399,7 @@ export default class QBittorrent implements TorrentClient {
 	}
 
 	async getTrackers(infoHash: string): Promise<string[] | null> {
-		var responseText = await this.request(
+		const responseText = await this.request(
 			"/torrents/trackers",
 			`hash=${infoHash}`,
 			X_WWW_FORM_URLENCODED,
@@ -447,9 +447,9 @@ export default class QBittorrent implements TorrentClient {
 			| "UNKNOWN_ERROR"
 		>
 	> {
-		var { torrentDir } = getRuntimeConfig();
+		const { torrentDir } = getRuntimeConfig();
 		try {
-			var torrentInfo = await this.getTorrentInfo(meta.infoHash);
+			const torrentInfo = await this.getTorrentInfo(meta.infoHash);
 			if (!torrentInfo) {
 				return resultOfErr("NOT_FOUND");
 			}
@@ -488,15 +488,15 @@ export default class QBittorrent implements TorrentClient {
 		onlyCompleted: boolean;
 		v1HashOnly?: boolean;
 	}): Promise<Map<string, string>> {
-		var { torrentDir } = getRuntimeConfig();
-		var torrents = await this.getAllTorrentInfo();
-		var torrentSavePaths = new Map<string, string>();
-		var infoHashMetaMap = options.metas.reduce((acc, meta) => {
+		const { torrentDir } = getRuntimeConfig();
+		const torrents = await this.getAllTorrentInfo();
+		const torrentSavePaths = new Map<string, string>();
+		const infoHashMetaMap = options.metas.reduce((acc, meta) => {
 			acc.set(meta.infoHash, meta);
 			return acc;
 		}, new Map<string, SearcheeWithInfoHash | Metafile>());
-		for (var torrent of torrents) {
-			var meta =
+		for (const torrent of torrents) {
+			const meta =
 				infoHashMetaMap.get(torrent.hash) ||
 				(torrent.infohash_v2 &&
 					infoHashMetaMap.get(torrent.infohash_v2)) ||
@@ -515,7 +515,7 @@ export default class QBittorrent implements TorrentClient {
 			if (options.onlyCompleted && !this.isTorrentInfoComplete(torrent)) {
 				continue;
 			}
-			var savePath = meta
+			const savePath = meta
 				? this.getCorrectSavePath(meta, torrent)
 				: torrent.save_path;
 			if (torrent.infohash_v1?.length) {
@@ -539,7 +539,7 @@ export default class QBittorrent implements TorrentClient {
 		data: Searchee | Metafile,
 		torrentInfo: TorrentInfo,
 	): string {
-		var subfolderContentLayout = this.isSubfolderContentLayout(
+		const subfolderContentLayout = this.isSubfolderContentLayout(
 			data,
 			torrentInfo,
 		);
@@ -555,7 +555,7 @@ export default class QBittorrent implements TorrentClient {
 	 * @return array of all torrents in the client
 	 */
 	async getAllTorrentInfo(): Promise<TorrentInfo[]> {
-		var responseText = await this.request("/torrents/info", "");
+		const responseText = await this.request("/torrents/info", "");
 		if (!responseText) {
 			return [];
 		}
@@ -571,21 +571,21 @@ export default class QBittorrent implements TorrentClient {
 		numRetries = 0,
 	): Promise<TorrentInfo | undefined> {
 		if (!hash) return undefined;
-		var retries = Math.max(numRetries, 0);
+		const retries = Math.max(numRetries, 0);
 		for (let i = 0; i <= retries; i++) {
-			var responseText = await this.request(
+			const responseText = await this.request(
 				"/torrents/info",
 				`hashes=${hash}`,
 				X_WWW_FORM_URLENCODED,
 			);
 			if (responseText) {
-				var torrents = JSON.parse(responseText) as TorrentInfo[];
+				const torrents = JSON.parse(responseText) as TorrentInfo[];
 				if (torrents.length > 0) {
 					return torrents[0];
 				}
 			}
-			var torrents = await this.getAllTorrentInfo();
-			var torrentInfo = torrents.find(
+			const torrents = await this.getAllTorrentInfo();
+			const torrentInfo = torrents.find(
 				(torrent) =>
 					hash === torrent.hash ||
 					hash === torrent.infohash_v1 ||
@@ -605,7 +605,7 @@ export default class QBittorrent implements TorrentClient {
 	 * @return array of all torrents in the client
 	 */
 	async getAllTorrents(): Promise<TorrentMetadataInClient[]> {
-		var torrents = await this.getAllTorrentInfo();
+		const torrents = await this.getAllTorrentInfo();
 		return torrents.map((torrent) => ({
 			infoHash: torrent.hash,
 			category: torrent.category,
@@ -624,10 +624,10 @@ export default class QBittorrent implements TorrentClient {
 		newSearcheesOnly?: boolean;
 		refresh?: string[];
 	}): Promise<ClientSearcheeResult> {
-		var searchees: SearcheeClient[] = [];
-		var newSearchees: SearcheeClient[] = [];
-		var infoHashes = new Set<string>();
-		var torrents = await this.getAllTorrentInfo();
+		const searchees: SearcheeClient[] = [];
+		const newSearchees: SearcheeClient[] = [];
+		const infoHashes = new Set<string>();
+		const torrents = await this.getAllTorrentInfo();
 		if (!torrents.length) {
 			logger.error({
 				label: this.label,
@@ -635,16 +635,16 @@ export default class QBittorrent implements TorrentClient {
 			});
 			return { searchees, newSearchees };
 		}
-		for (var torrent of torrents) {
-			var infoHash = (
+		for (const torrent of torrents) {
+			const infoHash = (
 				torrent.infohash_v1 || torrent.hash
 			).toLowerCase();
 			infoHashes.add(infoHash);
-			var dbTorrent = await memDB("torrent")
+			const dbTorrent = await memDB("torrent")
 				.where("info_hash", infoHash)
 				.where("client_host", this.clientHost)
 				.first();
-			var refresh =
+			const refresh =
 				options?.refresh === undefined
 					? false
 					: options.refresh.length === 0
@@ -656,7 +656,7 @@ export default class QBittorrent implements TorrentClient {
 				}
 				continue;
 			}
-			var files = await this.getFiles(torrent.hash);
+			const files = await this.getFiles(torrent.hash);
 			if (!files) {
 				logger.verbose({
 					label: this.label,
@@ -671,7 +671,7 @@ export default class QBittorrent implements TorrentClient {
 				});
 				continue;
 			}
-			var trackers = await this.getTrackers(torrent.hash);
+			const trackers = await this.getTrackers(torrent.hash);
 			if (!trackers) {
 				logger.verbose({
 					label: this.label,
@@ -679,13 +679,13 @@ export default class QBittorrent implements TorrentClient {
 				});
 				continue;
 			}
-			var { name } = torrent;
-			var title = parseTitle(name, files) ?? name;
-			var length = torrent.total_size;
-			var savePath = torrent.save_path;
-			var category = torrent.category;
-			var tags = torrent.tags.length ? torrent.tags.split(", ") : [];
-			var searchee: SearcheeClient = {
+			const { name } = torrent;
+			const title = parseTitle(name, files) ?? name;
+			const length = torrent.total_size;
+			const savePath = torrent.save_path;
+			const category = torrent.category;
+			const tags = torrent.tags.length ? torrent.tags.split(", ") : [];
+			const searchee: SearcheeClient = {
 				infoHash,
 				name,
 				title,
@@ -711,7 +711,7 @@ export default class QBittorrent implements TorrentClient {
 	async isTorrentComplete(
 		infoHash: string,
 	): Promise<Result<boolean, "NOT_FOUND">> {
-		var torrentInfo = await this.getTorrentInfo(infoHash);
+		const torrentInfo = await this.getTorrentInfo(infoHash);
 		if (!torrentInfo) return resultOfErr("NOT_FOUND");
 		return resultOf(this.isTorrentInfoComplete(torrentInfo));
 	}
@@ -723,7 +723,7 @@ export default class QBittorrent implements TorrentClient {
 	async isTorrentChecking(
 		infoHash: string,
 	): Promise<Result<boolean, "NOT_FOUND">> {
-		var torrentInfo = await this.getTorrentInfo(infoHash);
+		const torrentInfo = await this.getTorrentInfo(infoHash);
 		if (!torrentInfo) return resultOfErr("NOT_FOUND");
 		return resultOf(
 			["checkingDL", "checkingUP"].includes(torrentInfo.state),
@@ -754,7 +754,7 @@ export default class QBittorrent implements TorrentClient {
 		data: Searchee | Metafile,
 		dataInfo: TorrentInfo,
 	): boolean {
-		var { useClientTorrents } = getRuntimeConfig();
+		const { useClientTorrents } = getRuntimeConfig();
 		if (useClientTorrents) return false;
 		if (data.files.length > 1) return false;
 		let dirname = path.posix.dirname;
@@ -782,7 +782,7 @@ export default class QBittorrent implements TorrentClient {
 		data: Searchee | Metafile,
 		dataInfo: TorrentInfo,
 	): boolean {
-		var { useClientTorrents } = getRuntimeConfig();
+		const { useClientTorrents } = getRuntimeConfig();
 		if (useClientTorrents) return false;
 		if (data.files.length > 1) {
 			return dataInfo.content_path === dataInfo.save_path;
@@ -794,7 +794,7 @@ export default class QBittorrent implements TorrentClient {
 			relative = path.win32.relative;
 		}
 		if (dirname(data.files[0].path) === ".") return false;
-		var clientPath = relative(dataInfo.save_path, dataInfo.content_path);
+		const clientPath = relative(dataInfo.save_path, dataInfo.content_path);
 		return (
 			getPathParts(clientPath, dirname).length <
 			getPathParts(data.files[0].path, dirname).length
@@ -807,8 +807,8 @@ export default class QBittorrent implements TorrentClient {
 		options: { checkOnce: boolean },
 	): Promise<void> {
 		let sleepTime = resumeSleepTime;
-		var maxRemainingBytes = getMaxRemainingBytes(decision);
-		var stopTime = getResumeStopTime();
+		const maxRemainingBytes = getMaxRemainingBytes(decision);
+		const stopTime = getResumeStopTime();
 		let stop = false;
 		while (Date.now() < stopTime) {
 			if (options.checkOnce) {
@@ -816,7 +816,7 @@ export default class QBittorrent implements TorrentClient {
 				stop = true;
 			}
 			await wait(sleepTime);
-			var torrentInfo = await this.getTorrentInfo(infoHash);
+			const torrentInfo = await this.getTorrentInfo(infoHash);
 			if (!torrentInfo) {
 				sleepTime = resumeErrSleepTime; // Dropping connections or restart
 				continue;
@@ -824,7 +824,7 @@ export default class QBittorrent implements TorrentClient {
 			if (["checkingDL", "checkingUP"].includes(torrentInfo.state)) {
 				continue;
 			}
-			var torrentLog = `${torrentInfo.name} [${sanitizeInfoHash(infoHash)}]`;
+			const torrentLog = `${torrentInfo.name} [${sanitizeInfoHash(infoHash)}]`;
 			if (
 				!["pausedDL", "stoppedDL", "pausedUP", "stoppedUP"].includes(
 					torrentInfo.state,
@@ -866,12 +866,12 @@ export default class QBittorrent implements TorrentClient {
 		decision: DecisionAnyMatch,
 		path?: string,
 	): Promise<InjectionResult> {
-		var { linkCategory } = getRuntimeConfig();
+		const { linkCategory } = getRuntimeConfig();
 		try {
 			if (await this.getTorrentInfo(newTorrent.infoHash)) {
 				return InjectionResult.ALREADY_EXISTS;
 			}
-			var searcheeInfo = await this.getTorrentInfo(searchee.infoHash);
+			const searcheeInfo = await this.getTorrentInfo(searchee.infoHash);
 			if (!searcheeInfo) {
 				if (!path) {
 					// This is never possible, being made explicit here
@@ -886,7 +886,7 @@ export default class QBittorrent implements TorrentClient {
 				}
 			}
 
-			var { savePath, isComplete, autoTMM, category } = path
+			const { savePath, isComplete, autoTMM, category } = path
 				? {
 						savePath: path,
 						isComplete: true,
@@ -900,14 +900,14 @@ export default class QBittorrent implements TorrentClient {
 						category: searcheeInfo!.category,
 					};
 			if (!isComplete) return InjectionResult.TORRENT_NOT_COMPLETE;
-			var filename = `${newTorrent.getFileSystemSafeName()}.${TORRENT_TAG}.torrent`;
-			var buffer = new Blob([newTorrent.encode()], {
+			const filename = `${newTorrent.getFileSystemSafeName()}.${TORRENT_TAG}.torrent`;
+			const buffer = new Blob([newTorrent.encode()], {
 				type: "application/x-bittorrent",
 			});
-			var toRecheck = shouldRecheck(searchee, decision);
+			const toRecheck = shouldRecheck(searchee, decision);
 
 			// ---------------------- Building form data ----------------------
-			var formData = new FormData();
+			const formData = new FormData();
 			formData.append("torrents", buffer, filename);
 			if (!autoTMM) {
 				formData.append("downloadPath", savePath);
@@ -950,7 +950,7 @@ export default class QBittorrent implements TorrentClient {
 				logger.debug(e);
 			}
 
-			var newInfo = await this.getTorrentInfo(newTorrent.infoHash, 5);
+			const newInfo = await this.getTorrentInfo(newTorrent.infoHash, 5);
 			if (!newInfo) {
 				throw new Error(`Failed to retrieve torrent after adding`);
 			}
